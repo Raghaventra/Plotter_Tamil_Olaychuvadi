@@ -1,0 +1,74 @@
+# =====================================================================
+#  Olai Chuvadi Plotter — configuration
+#  Tamil (Geethapria) PDF  ->  dotted outline  ->  GRBL G-code
+#  Every parameter the pipeline uses lives here. Edit freely.
+# =====================================================================
+
+# ---- Input --------------------------------------------------------
+# Accepts a SCAN of Tamil handwriting as PDF, SVG, or image (PNG/JPG/TIFF...).
+input_pdf: "samples/test_scan.pdf"    # path to the source file
+page_index: 0                         # which page (for multi-page PDFs)
+render_dpi: 600                       # rasterization DPI for PDF/SVG inputs
+input:
+  max_dimension_px: 3000              # downscale big scans (speed + denoise)
+
+# ---- Stroke style -------------------------------------------------
+# centerline : one dotted line down the middle of each pen stroke
+#              (natural handwriting / Olai-chuvadi look)  <-- default
+# outline    : dot the contour/edges of each shape (typed/solid glyphs)
+stroke_mode: "centerline"
+
+# ---- Scan preprocessing -------------------------------------------
+preprocess:
+  denoise: true          # median + bilateral filter before thresholding
+  threshold: "otsu"      # "otsu" (even lighting) or "adaptive" (uneven scans)
+  adaptive_block: 41     # odd; neighbourhood size for adaptive threshold
+  adaptive_C: 10         # adaptive threshold bias
+  deskew: false          # auto-rotate to correct small scan skew
+  remove_speckle: true   # delete tiny specks (dust/noise)
+  speckle_rel: 0.12      # blob smaller than this * letter height = noise
+  min_stroke_rel: 0.12   # stroke shorter than this * letter height = dropped
+
+# ---- Output -------------------------------------------------------
+output_gcode: "output/olai.gcode"
+output_preview: "output/preview.png"
+
+# ---- Machine work area (millimetres) ------------------------------
+work_area:
+  width_mm: 345.0     # X travel
+  height_mm: 240.0    # Y travel
+
+# ---- Layout / scaling ---------------------------------------------
+layout:
+  target_letter_height_mm: 6.0   # median glyph height is scaled to this
+  margin_mm: 10.0                # keep-out margin from every work-area edge
+  fit_if_too_big: true           # auto shrink to fit if content exceeds area
+
+# ---- Dot sampling -------------------------------------------------
+dots:
+  spacing_mm: 0.8       # distance between punched dots (measured on the paper)
+  include_holes: true   # OUTLINE mode only: also trace inner holes/loops
+                        # (noise removal is handled in the preprocess section)
+
+# ---- Pen-lift -----------------------------------------------------
+# Your 2-axis kit uses a servo that GRBL-Plotter drives via Z moves,
+# so keep mode: "z". Switch to "servo" to emit M3/M5 directly.
+pen:
+  mode: "z"             # "z"  -> emit Z up/down moves
+                        # "servo" -> emit servo_down_cmd / servo_up_cmd
+  z_up_mm: 2.0          # safe / travel height (needle lifted)
+  z_down_mm: -0.5       # punch position (needle into paper)
+  dwell_ms: 0           # pause at the bottom of each punch (0 = none)
+  servo_down_cmd: "M3 S1000"   # used only when mode: "servo"
+  servo_up_cmd: "M5"
+
+# ---- Feed rates (mm/min) ------------------------------------------
+feeds:
+  plunge_z: 400.0       # speed of the punch down/up move
+  travel_xy: 1500.0     # XY move speed (used if travel_g0 is false)
+  travel_g0: true       # true -> use rapid G0 for XY repositioning
+
+# ---- Path optimization --------------------------------------------
+optimize:
+  reorder: true         # serpentine-sort dots to minimise air travel
+  band_mm: 2.0          # height of each serpentine band

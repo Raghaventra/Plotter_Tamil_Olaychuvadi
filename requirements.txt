@@ -1,0 +1,7 @@
+# Olai Chuvadi Plotter — Tamil text -> dotted GRBL G-code
+PyMuPDF>=1.24        # PDF rendering (fitz)
+opencv-python-headless>=4.8   # contour extraction
+numpy>=1.24
+PyYAML>=6.0          # config
+Pillow>=10.0         # test-PDF rendering (with raqm shaping) + preview
+scikit-image>=0.19   # skeletonization for centerline strokes (pulls in scipy)
